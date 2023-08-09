@@ -20,7 +20,7 @@ INSERT INTO test (name) VALUES ('test2');
 CREATE TABLE user (
 	id                      UUID PRIMARY KEY,
 	full_name               VARCHAR (100) NOT NULL,
-  phone_number            VARCHAR (15) UNIQUE NOT NULL,
+  phone_number            VARCHAR (13) UNIQUE NOT NULL,
   password                VARCHAR (255) NOT NULL,
   success_login_counter   int NOT NULL DEFAULT 0,
   created_at              timestamptz		NOT NULL DEFAULT now(),

@@ -17,37 +17,56 @@ info:
 servers:
   - url: http://localhost
 paths:
-  /hello:
-    get:
-      summary: This is just a test endpoint to get you started. Please delete this endpoint.
-      operationId: hello
-      parameters:
-        - name: id
-          in: query
-          required: true
-          schema:
-            type: integer
+  /register:
+    post:
+      summary: User Registration API 
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrationRequest'
       responses:
         '200':
-          description: Test return
+          description: Success
           content:
             application/json:    
               schema:
-                $ref: "#/components/schemas/HelloResponse"
+                $ref: "#/components/schemas/RegistrationResponse"
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         '404':
           description: Not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse" 
 components:
   schemas:
-    HelloResponse:
+    RegistrationRequest:
       type: object
       required:
-        - message
+        - full_name
+        - phone_number
+        - password
       properties:
-        message:
+        full_name:
+          type: string
+        phone_number:
+          type: string
+        password:
+          type: string
+    RegistrationResponse:
+      type: object
+      required:
+        - user_id
+      properties:
+        user_id:
           type: string
     ErrorResponse:
       type: object

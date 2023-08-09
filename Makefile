@@ -8,6 +8,11 @@ build/main: cmd/main.go generated
 	@echo "Building..."
 	go build -o $@ $<
 
+run:
+	docker-compose up --build
+
+start: init run
+
 clean:
 	rm -rf generated
 

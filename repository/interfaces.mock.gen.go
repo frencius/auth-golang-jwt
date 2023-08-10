@@ -34,8 +34,23 @@ func (m *MockRepositoryInterface) EXPECT() *MockRepositoryInterfaceMockRecorder 
 	return m.recorder
 }
 
+// GetUser mocks base method.
+func (m *MockRepositoryInterface) GetUser(ctx context.Context, phone_number string) (*User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUser", ctx, phone_number)
+	ret0, _ := ret[0].(*User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUser indicates an expected call of GetUser.
+func (mr *MockRepositoryInterfaceMockRecorder) GetUser(ctx, phone_number interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockRepositoryInterface)(nil).GetUser), ctx, phone_number)
+}
+
 // StoreRegistration mocks base method.
-func (m *MockRepositoryInterface) StoreRegistration(ctx context.Context, data *Registration) error {
+func (m *MockRepositoryInterface) StoreRegistration(ctx context.Context, data *User) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StoreRegistration", ctx, data)
 	ret0, _ := ret[0].(error)
@@ -46,4 +61,18 @@ func (m *MockRepositoryInterface) StoreRegistration(ctx context.Context, data *R
 func (mr *MockRepositoryInterfaceMockRecorder) StoreRegistration(ctx, data interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreRegistration", reflect.TypeOf((*MockRepositoryInterface)(nil).StoreRegistration), ctx, data)
+}
+
+// UpdateLogin mocks base method.
+func (m *MockRepositoryInterface) UpdateLogin(ctx context.Context, userID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateLogin", ctx, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateLogin indicates an expected call of UpdateLogin.
+func (mr *MockRepositoryInterfaceMockRecorder) UpdateLogin(ctx, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateLogin", reflect.TypeOf((*MockRepositoryInterface)(nil).UpdateLogin), ctx, userID)
 }

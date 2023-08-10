@@ -34,17 +34,16 @@ func (m *MockRepositoryInterface) EXPECT() *MockRepositoryInterfaceMockRecorder 
 	return m.recorder
 }
 
-// GetTestById mocks base method.
-func (m *MockRepositoryInterface) GetTestById(ctx context.Context, input GetTestByIdInput) (GetTestByIdOutput, error) {
+// StoreRegistration mocks base method.
+func (m *MockRepositoryInterface) StoreRegistration(ctx context.Context, data *Registration) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTestById", ctx, input)
-	ret0, _ := ret[0].(GetTestByIdOutput)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "StoreRegistration", ctx, data)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
-// GetTestById indicates an expected call of GetTestById.
-func (mr *MockRepositoryInterfaceMockRecorder) GetTestById(ctx, input interface{}) *gomock.Call {
+// StoreRegistration indicates an expected call of StoreRegistration.
+func (mr *MockRepositoryInterfaceMockRecorder) StoreRegistration(ctx, data interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTestById", reflect.TypeOf((*MockRepositoryInterface)(nil).GetTestById), ctx, input)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreRegistration", reflect.TypeOf((*MockRepositoryInterface)(nil).StoreRegistration), ctx, data)
 }

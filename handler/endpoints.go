@@ -10,7 +10,10 @@ import (
 	"unicode"
 
 	"github.com/SawitProRecruitment/UserService/generated"
+	"github.com/SawitProRecruitment/UserService/repository"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const (
@@ -27,26 +30,51 @@ const (
 
 // Register handles user registration
 func (s *Server) Register(ctx echo.Context) error {
-	var errorResp generated.ErrorResponse
-	var succesResp generated.RegistrationResponse
+	var (
+		errorResp  generated.ErrorResponse
+		succesResp generated.RegistrationResponse
+	)
 
-	r := &Registration{}
-	err := json.NewDecoder(ctx.Request().Body).Decode(&r)
+	request := &generated.RegistrationRequest{}
+	err := json.NewDecoder(ctx.Request().Body).Decode(&request)
 	if err != nil {
 		return err
 	}
 
-	err = validate(r)
+	err = validate(request)
 	if err != nil {
 		errorResp.Message = err.Error()
 		return ctx.JSON(http.StatusBadRequest, errorResp)
 	}
 
-	succesResp.UserId = "ID123"
+	// hash password
+	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.MinCost)
+	if err != nil {
+		return err
+	}
+	request.Password = string(hashedPwd)
+
+	// set user id
+	userID := uuid.New().String()
+
+	// store to database
+	registrationData := &repository.Registration{
+		ID:          userID,
+		FullName:    request.FullName,
+		PhoneNumber: request.PhoneNumber,
+		Password:    request.Password,
+	}
+
+	err = s.Repository.StoreRegistration(ctx.Request().Context(), registrationData)
+	if err != nil {
+		return err
+	}
+
+	succesResp.UserId = userID
 	return ctx.JSON(http.StatusOK, succesResp)
 }
 
-func validate(request *Registration) error {
+func validate(request *generated.RegistrationRequest) error {
 	errStrs := []string{}
 
 	// validate phone number

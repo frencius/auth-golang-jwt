@@ -1,11 +1,18 @@
 package repository
 
-import "context"
+import (
+	"context"
+)
 
-func (r *Repository) GetTestById(ctx context.Context, input GetTestByIdInput) (output GetTestByIdOutput, err error) {
-	err = r.Db.QueryRowContext(ctx, "SELECT name FROM test WHERE id = $1", input.Id).Scan(&output.Name)
+func (r *Repository) StoreRegistration(ctx context.Context, data *Registration) error {
+	query := `
+	INSERT INTO "user" (id, full_name, phone_number, password)
+	VALUES ($1, $2, $3, $4);
+`
+	_, err := r.Db.Exec(query, data.ID, data.FullName, data.PhoneNumber, data.Password)
 	if err != nil {
-		return
+		return err
 	}
-	return
+
+	return nil
 }

@@ -1,10 +1,8 @@
-// This file contains types that are used in the repository layer.
 package repository
 
-type GetTestByIdInput struct {
-	Id string
-}
-
-type GetTestByIdOutput struct {
-	Name string
+type Registration struct {
+	ID          string `json:"id"`
+	FullName    string `json:"full_name"`
+	PhoneNumber string `json:"phone_number"`
+	Password    string `json:"password"`
 }

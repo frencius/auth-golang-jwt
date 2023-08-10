@@ -8,20 +8,13 @@
   */
 
 /** This is test table. Remove this table and replace with your own tables. */
-CREATE TABLE test (
-	id serial PRIMARY KEY,
-	name VARCHAR ( 50 ) UNIQUE NOT NULL
-);
-
-INSERT INTO test (name) VALUES ('test1');
-INSERT INTO test (name) VALUES ('test2');
 
 
-CREATE TABLE user (
-	id                      UUID PRIMARY KEY,
+CREATE TABLE "user"(
+	"id"                      UUID PRIMARY KEY,
 	full_name               VARCHAR (100) NOT NULL,
   phone_number            VARCHAR (13) UNIQUE NOT NULL,
-  password                VARCHAR (255) NOT NULL,
+  "password"                VARCHAR (255) NOT NULL,
   success_login_counter   int NOT NULL DEFAULT 0,
   created_at              timestamptz		NOT NULL DEFAULT now(),
 	updated_at              timestamptz		NOT NULL DEFAULT now(),

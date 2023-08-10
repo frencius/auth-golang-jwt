@@ -11,13 +11,24 @@
 
 
 CREATE TABLE "user"(
-	"id"                      UUID PRIMARY KEY,
+	"id"                    UUID PRIMARY KEY,
 	full_name               VARCHAR (100) NOT NULL,
   phone_number            VARCHAR (13) UNIQUE NOT NULL,
-  "password"                VARCHAR (255) NOT NULL,
-  success_login_counter   int NOT NULL DEFAULT 0,
+  "password"              VARCHAR (255) NOT NULL,
   created_at              timestamptz		NOT NULL DEFAULT now(),
 	updated_at              timestamptz		NOT NULL DEFAULT now(),
 	created_by              varchar(100)	NOT NULL DEFAULT 'system'::character varying,
 	updated_by              varchar(100)	NOT NULL DEFAULT 'system'::character varying
+);
+
+CREATE TABLE login(
+	"id"                    UUID PRIMARY KEY,
+	user_id                 UUID NOT NULL UNIQUE,
+  success_counter         int NOT NULL DEFAULT 0,
+  last_login              timestamptz		NOT NULL DEFAULT now(),
+  created_at              timestamptz		NOT NULL DEFAULT now(),
+	updated_at              timestamptz		NOT NULL DEFAULT now(),
+	created_by              varchar(100)	NOT NULL DEFAULT 'system'::character varying,
+	updated_by              varchar(100)	NOT NULL DEFAULT 'system'::character varying,
+  CONSTRAINT fk_user_id FOREIGN KEY(user_id) REFERENCES "user"(id) ON DELETE NO ACTION
 );

@@ -8,10 +8,12 @@ import (
 	"compress/gzip"
 	"encoding/base64"
 	"fmt"
+	"net/http"
 	"net/url"
 	"path"
 	"strings"
 
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/labstack/echo/v4"
 )
@@ -19,6 +21,24 @@ import (
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	Message string `json:"message"`
+}
+
+// GetProfileResponse defines model for GetProfileResponse.
+type GetProfileResponse struct {
+	FullName    string `json:"full_name"`
+	PhoneNumber string `json:"phone_number"`
+}
+
+// LoginRequest defines model for LoginRequest.
+type LoginRequest struct {
+	Password    string `json:"password"`
+	PhoneNumber string `json:"phone_number"`
+}
+
+// LoginResponse defines model for LoginResponse.
+type LoginResponse struct {
+	Token  string `json:"token"`
+	UserId string `json:"user_id"`
 }
 
 // RegistrationRequest defines model for RegistrationRequest.
@@ -33,11 +53,25 @@ type RegistrationResponse struct {
 	UserId string `json:"user_id"`
 }
 
+// GetProfileParams defines parameters for GetProfile.
+type GetProfileParams struct {
+	Authorization string `json:"Authorization"`
+}
+
+// LoginJSONRequestBody defines body for Login for application/json ContentType.
+type LoginJSONRequestBody = LoginRequest
+
 // RegisterJSONRequestBody defines body for Register for application/json ContentType.
 type RegisterJSONRequestBody = RegistrationRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// User Login API
+	// (POST /login)
+	Login(ctx echo.Context) error
+	// Get User Profile
+	// (GET /profile)
+	GetProfile(ctx echo.Context, params GetProfileParams) error
 	// User Registration API
 	// (POST /register)
 	Register(ctx echo.Context) error
@@ -46,6 +80,46 @@ type ServerInterface interface {
 // ServerInterfaceWrapper converts echo contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler ServerInterface
+}
+
+// Login converts echo context to params.
+func (w *ServerInterfaceWrapper) Login(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.Login(ctx)
+	return err
+}
+
+// GetProfile converts echo context to params.
+func (w *ServerInterfaceWrapper) GetProfile(ctx echo.Context) error {
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetProfileParams
+
+	headers := ctx.Request().Header
+	// ------------- Required header parameter "Authorization" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Authorization")]; found {
+		var Authorization string
+		n := len(valueList)
+		if n != 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Expected one value for Authorization, got %d", n))
+		}
+
+		err = runtime.BindStyledParameterWithLocation("simple", false, "Authorization", runtime.ParamLocationHeader, valueList[0], &Authorization)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter Authorization: %s", err))
+		}
+
+		params.Authorization = Authorization
+	} else {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Header parameter Authorization is required, but not found"))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetProfile(ctx, params)
+	return err
 }
 
 // Register converts echo context to params.
@@ -85,6 +159,8 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
+	router.POST(baseURL+"/login", wrapper.Login)
+	router.GET(baseURL+"/profile", wrapper.GetProfile)
 	router.POST(baseURL+"/register", wrapper.Register)
 
 }
@@ -92,14 +168,16 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/7xTTW8TMRD9K9HAMeoG6Mk3KnHIAYRSOFVV5HonWVdejzszLoqi/e/I3qQfZFEu0JvX",
-	"fvb7mLd7cNQnihhVwOxBXIe9rcsvzMQrlERRsGwkpoSsHutxjyJ2Ww90lxAMiLKPWxiGOTA+ZM/Ygrl5",
-	"At7Oj0C6u0enMMxhhVsvylY9xRU+ZBQ9ZdrkENbR9lNcc0hW5BdxO33YUcR1zP0d8nmlz0R/3HzBct7F",
-	"3wLLgrz27XkZR+ApVUH6uKHyRvAODzxjNvB1+aOoUa+hfP4U5Nk18qN3xdAjsniKYODDxeJiUZCUMNrk",
-	"wcCnulVsalfFNlw9jaklGsdS3FSTyxbMwXVNh8fRXVG7KzhHUTHWKzal4F291NxLoT92rKzeM27AwLvm",
-	"uYTNoYHNVDWG11EpZ6wbY+RV+MfF4j9JOMy1amhRHPukY6DX2TkUKZFe/kP61z/gBO+VbWdP0RTuy7fj",
-	"/kY621COba2v5L63vDu27mVws8/fl+MDglxKCOZmD5kDGOhUk2maQM6GrpRsuB1+BwAA///P8eiOkgQA",
-	"AA==",
+	"H4sIAAAAAAAC/9RUTWvbQBD9K2bao4jcj5NuCZRgaCE47SkYs1mNrU2l3c3MyMU1+u9lV1IVO3JNwQnk",
+	"Zu8+7bx5b+btQLvKO4tWGLIdsC6wUvHnFyJHc2TvLGM48OQ8khiM1xUyq3W8kK1HyICFjF1D0yRA+Fgb",
+	"whyyu7/ARdID3f0DaoEmgWuUG3IrU+LxQqu6LJdWVWOlEvCFs7i0dXWPdJrL8NbBl2Pkvrq1sXN8rJHl",
+	"OS2vmH85ys/Aag+dDC//g9QxscT9RDtKqWakpclPs+mBSffYGIs5rg0LKTHuuEInjDuffkddPaHlfhfH",
+	"JP1v4Z6XCkhjVy68URqNXZ1WG/g2+x7YiJEy/P3BSJNbpI3RoaENEhtnIYMPF9OLaUA6j1Z5Axl8ikeh",
+	"TSki2bQM8xGbcK0noZXY4SyHrB0faHkjy5XLtwGknRW0Ea+8L42OX6QP7OyQCuHXe8IVZPAuHWIj7TIj",
+	"3duXZl8doRrjQaty5PpxOj137c7DWDxH1mS8tOLd1lojc5Dv8xnr7ofkSN0rlU8GTRLguqoUbXufI+/J",
+	"5c0sXqa+DcNQdY0j9g15GU0nVaEgMWR3Owi2Q4Eqj4PfzdZlLYUj8zs+AYeOJE+6PJztxQu6NRL7b8Ky",
+	"a5RJtK03IZpGMUbaoBrfunmPeJnFG0vjV96/0Sh9O2v4lH63jQGEtOm3q6YyrJeIz9K0dFqVRbC6WTR/",
+	"AgAA//8uU7wAQwkAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

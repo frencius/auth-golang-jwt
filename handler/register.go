@@ -10,6 +10,7 @@ import (
 	"unicode"
 
 	"github.com/SawitProRecruitment/UserService/generated"
+	"github.com/SawitProRecruitment/UserService/helper"
 	"github.com/SawitProRecruitment/UserService/repository"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -31,8 +32,8 @@ const (
 // Register handles user registration
 func (s *Server) Register(ctx echo.Context) error {
 	var (
-		errorResp  generated.ErrorResponse
-		succesResp generated.RegistrationResponse
+		errorResp   generated.ErrorResponse
+		successResp generated.RegistrationResponse
 	)
 
 	request := &generated.RegistrationRequest{}
@@ -58,7 +59,7 @@ func (s *Server) Register(ctx echo.Context) error {
 	userID := uuid.New().String()
 
 	// store to database
-	registrationData := &repository.Registration{
+	registrationData := &repository.User{
 		ID:          userID,
 		FullName:    request.FullName,
 		PhoneNumber: request.PhoneNumber,
@@ -70,8 +71,8 @@ func (s *Server) Register(ctx echo.Context) error {
 		return err
 	}
 
-	succesResp.UserId = userID
-	return ctx.JSON(http.StatusOK, succesResp)
+	successResp.UserId = userID
+	return ctx.JSON(http.StatusOK, successResp)
 }
 
 func validate(request *generated.RegistrationRequest) error {
@@ -95,15 +96,7 @@ func validate(request *generated.RegistrationRequest) error {
 		errStrs = append(errStrs, err.Error())
 	}
 
-	return errStringsToErr(errStrs)
-}
-
-func errStringsToErr(errStrs []string) error {
-	if len(errStrs) > 0 {
-		return errors.New(strings.Join(errStrs, ", "))
-	}
-
-	return nil
+	return helper.ErrStringsToErr(errStrs)
 }
 
 func validatePhoneNumber(phoneNumber string) error {

@@ -40,12 +40,52 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-        '404':
-          description: Not found
+  /login:
+    post:
+      summary: User Login API 
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:    
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        '400':
+          description: Bad Request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse" 
+                $ref: "#/components/schemas/ErrorResponse"
+  /profile:
+    get:
+      summary: Get User Profile
+      operationId: getProfile
+      parameters:
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:    
+              schema:
+                $ref: "#/components/schemas/GetProfileResponse"
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     RegistrationRequest:
@@ -67,6 +107,36 @@ components:
         - user_id
       properties:
         user_id:
+          type: string
+    LoginRequest:
+      type: object
+      required:
+        - phone_number
+        - password
+      properties:
+        phone_number:
+          type: string
+        password:
+          type: string
+    LoginResponse:
+      type: object
+      required:
+        - user_id
+        - token
+      properties:
+        user_id:
+          type: string
+        token:
+          type: string
+    GetProfileResponse:
+      type: object
+      required:
+        - full_name
+        - phone_number
+      properties:
+        full_name:
+          type: string
+        phone_number:
           type: string
     ErrorResponse:
       type: object

@@ -10,6 +10,8 @@ import (
 
 type RepositoryInterface interface {
 	StoreRegistration(ctx context.Context, data *User) error
-	GetUser(ctx context.Context, phone_number string) (*User, error)
+	GetUser(ctx context.Context, phoneNumber string) (*User, error)
+	GetUserByID(ctx context.Context, userID string) (*User, error)
 	UpdateLogin(ctx context.Context, userID string) error
+	UpdateProfile(ctx context.Context, data *User) error
 }

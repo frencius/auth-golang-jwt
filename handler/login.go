@@ -73,6 +73,7 @@ func createJWTToken(user *repository.User) (string, error) {
 	expirationTime := time.Now().Add(5 * time.Minute)
 
 	claims := &Claims{
+		UserID:      user.ID,
 		PhoneNumber: user.PhoneNumber,
 		FullName:    user.FullName,
 		RegisteredClaims: jwt.RegisteredClaims{

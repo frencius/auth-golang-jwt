@@ -80,6 +80,47 @@ paths:
             application/json:    
               schema:
                 $ref: "#/components/schemas/GetProfileResponse"
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /profile/update:
+    patch:
+      summary: Update User Profile
+      operationId: updateProfile
+      parameters:
+        - in: header
+          name: Authorization
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:    
+              schema:
+                $ref: "#/components/schemas/UpdateProfileResponse"
+        '409':
+          description: Success
+          content:
+            application/json:    
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         '400':
           description: Bad Request
           content:
@@ -129,6 +170,23 @@ components:
         token:
           type: string
     GetProfileResponse:
+      type: object
+      required:
+        - full_name
+        - phone_number
+      properties:
+        full_name:
+          type: string
+        phone_number:
+          type: string
+    UpdateProfileResponse:
+      type: object
+      required:
+        - result
+      properties:
+        result:
+          type: string
+    UpdateProfileRequest:
       type: object
       required:
         - full_name

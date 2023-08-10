@@ -53,13 +53,32 @@ type RegistrationResponse struct {
 	UserId string `json:"user_id"`
 }
 
+// UpdateProfileRequest defines model for UpdateProfileRequest.
+type UpdateProfileRequest struct {
+	FullName    string `json:"full_name"`
+	PhoneNumber string `json:"phone_number"`
+}
+
+// UpdateProfileResponse defines model for UpdateProfileResponse.
+type UpdateProfileResponse struct {
+	Result string `json:"result"`
+}
+
 // GetProfileParams defines parameters for GetProfile.
 type GetProfileParams struct {
 	Authorization string `json:"Authorization"`
 }
 
+// UpdateProfileParams defines parameters for UpdateProfile.
+type UpdateProfileParams struct {
+	Authorization string `json:"Authorization"`
+}
+
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody = LoginRequest
+
+// UpdateProfileJSONRequestBody defines body for UpdateProfile for application/json ContentType.
+type UpdateProfileJSONRequestBody = UpdateProfileRequest
 
 // RegisterJSONRequestBody defines body for Register for application/json ContentType.
 type RegisterJSONRequestBody = RegistrationRequest
@@ -72,6 +91,9 @@ type ServerInterface interface {
 	// Get User Profile
 	// (GET /profile)
 	GetProfile(ctx echo.Context, params GetProfileParams) error
+	// Update User Profile
+	// (PATCH /profile/update)
+	UpdateProfile(ctx echo.Context, params UpdateProfileParams) error
 	// User Registration API
 	// (POST /register)
 	Register(ctx echo.Context) error
@@ -122,6 +144,37 @@ func (w *ServerInterfaceWrapper) GetProfile(ctx echo.Context) error {
 	return err
 }
 
+// UpdateProfile converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateProfile(ctx echo.Context) error {
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateProfileParams
+
+	headers := ctx.Request().Header
+	// ------------- Required header parameter "Authorization" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Authorization")]; found {
+		var Authorization string
+		n := len(valueList)
+		if n != 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Expected one value for Authorization, got %d", n))
+		}
+
+		err = runtime.BindStyledParameterWithLocation("simple", false, "Authorization", runtime.ParamLocationHeader, valueList[0], &Authorization)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter Authorization: %s", err))
+		}
+
+		params.Authorization = Authorization
+	} else {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Header parameter Authorization is required, but not found"))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UpdateProfile(ctx, params)
+	return err
+}
+
 // Register converts echo context to params.
 func (w *ServerInterfaceWrapper) Register(ctx echo.Context) error {
 	var err error
@@ -161,6 +214,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 
 	router.POST(baseURL+"/login", wrapper.Login)
 	router.GET(baseURL+"/profile", wrapper.GetProfile)
+	router.PATCH(baseURL+"/profile/update", wrapper.UpdateProfile)
 	router.POST(baseURL+"/register", wrapper.Register)
 
 }
@@ -168,16 +222,17 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/9RUTWvbQBD9K2bao4jcj5NuCZRgaCE47SkYs1mNrU2l3c3MyMU1+u9lV1IVO3JNwQnk",
-	"Zu8+7bx5b+btQLvKO4tWGLIdsC6wUvHnFyJHc2TvLGM48OQ8khiM1xUyq3W8kK1HyICFjF1D0yRA+Fgb",
-	"whyyu7/ARdID3f0DaoEmgWuUG3IrU+LxQqu6LJdWVWOlEvCFs7i0dXWPdJrL8NbBl2Pkvrq1sXN8rJHl",
-	"OS2vmH85ys/Aag+dDC//g9QxscT9RDtKqWakpclPs+mBSffYGIs5rg0LKTHuuEInjDuffkddPaHlfhfH",
-	"JP1v4Z6XCkhjVy68URqNXZ1WG/g2+x7YiJEy/P3BSJNbpI3RoaENEhtnIYMPF9OLaUA6j1Z5Axl8ikeh",
-	"TSki2bQM8xGbcK0noZXY4SyHrB0faHkjy5XLtwGknRW0Ea+8L42OX6QP7OyQCuHXe8IVZPAuHWIj7TIj",
-	"3duXZl8doRrjQaty5PpxOj137c7DWDxH1mS8tOLd1lojc5Dv8xnr7ofkSN0rlU8GTRLguqoUbXufI+/J",
-	"5c0sXqa+DcNQdY0j9g15GU0nVaEgMWR3Owi2Q4Eqj4PfzdZlLYUj8zs+AYeOJE+6PJztxQu6NRL7b8Ky",
-	"a5RJtK03IZpGMUbaoBrfunmPeJnFG0vjV96/0Sh9O2v4lH63jQGEtOm3q6YyrJeIz9K0dFqVRbC6WTR/",
-	"AgAA//8uU7wAQwkAAA==",
+	"H4sIAAAAAAAC/9RWUU/bPBT9K9X9vseIdGMvyxtIG0LaJFTGE0LIOLeNWWKb62smhvrfJzspIcVZtKl0",
+	"21ub3Pgcn3N9rh9BmsYajZodFI/gZIWNiD8/EBlaoLNGOwwPLBmLxArj6wadE6v4gh8sQgGOSekVrNcZ",
+	"EN55RVhCcflUeJVtCs3NLUqGdQYnyGdklqrGcaClr+trLZoUVAa2MhqvtW9ukKa59GttfZki98mslF7g",
+	"nUfHL2lZ4dw3Q+UOWA2qs37ln5AaE4vNV9RJSt4hXatyms2mMOsWS7FY4Eo5JsHKjCs0Ydzu9Bt1dULL",
+	"4S7GJP1l4VJQF7YUjE+9/nuKvV6rb9Ebk4LQ+Zqnsbu6l0ihUOmlCUvUSmKH0m4ZPp9+CWRYcR3+Xjik",
+	"2TnSvZJhE/dIThkNBbw5mB/MQ6WxqIVVUMBhfBT85ipSzetwUOIWTCt12Ei0+rSEoj1H0NJGx8emfAhF",
+	"0mhGHeuFtbWS8Yv81hndx2P49T/hEgr4L+/zM+/CMx8Ex3ooDpPH+KDVOHJ9O5/vGrtzMIKX6CQpy614",
+	"515KdC7I926HuMNpkcA9FuWs1yQD55tG0MPG58h7dnR2Gl/mtm3FgLrChH394Iimk2iQkRwUl48QbIcK",
+	"RRkToOutI8+VIfU9LgHbjmTPdrnd2lev6FZi/k1Zdrg/yz4aulFliXrLsBPkWTRtY8Fzy3Ifs6QdkSyr",
+	"l94NwmY/9u3+jCcDfc9nPZ3af+uZ/3PNG5Df7w/5Se1hykWzEueG4i2kHenpWbXYVLxOK6cuc3vu5ORN",
+	"7N8ZXs/pdzMsFCHdb0LNUx1SjdkWeV4bKeoqWL2+Wv8IAAD//8iwKyGCDQAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

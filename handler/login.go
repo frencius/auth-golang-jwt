@@ -17,51 +17,46 @@ import (
 	"github.com/SawitProRecruitment/UserService/repository"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func (s *Server) Login(ctx echo.Context) error {
 	var (
-		errorResp   generated.ErrorResponse
 		successResp generated.LoginResponse
 	)
 
 	request := &generated.LoginRequest{}
 	err := json.NewDecoder(ctx.Request().Body).Decode(&request)
 	if err != nil {
-		return err
+		return sendErrorResponse(ctx, http.StatusBadRequest, err)
 	}
 
 	err = validateLogin(request)
 	if err != nil {
-		errorResp.Message = err.Error()
-		return ctx.JSON(http.StatusBadRequest, errorResp)
+		return sendErrorResponse(ctx, http.StatusBadRequest, err)
 	}
 
 	// get user by phone_number
 	user, err := s.Repository.GetUser(ctx.Request().Context(), request.PhoneNumber)
 	if err != nil {
-		errorResp.Message = "Username is not exist"
-		return ctx.JSON(http.StatusBadRequest, errorResp)
+		return sendErrorResponse(ctx, http.StatusNotFound, errors.New("User is not exist"))
 	}
 
 	hashedPassword := []byte(user.Password)
-	err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(request.Password))
+	err = CompareHashAndPassword(hashedPassword, []byte(request.Password))
 	if err != nil {
-		errorResp.Message = "Password is not valid"
-		return ctx.JSON(http.StatusBadRequest, errorResp)
+		return sendErrorResponse(ctx, http.StatusForbidden, errors.New("Password is not valid"))
 	}
 
 	// create JWT token
 	token, err := createJWTToken(user)
 	if err != nil {
-		return err
+		return sendErrorResponse(ctx, http.StatusInternalServerError, err)
 	}
 
 	// increment login counter
 	err = s.Repository.UpdateLogin(ctx.Request().Context(), user.ID)
 	if err != nil {
-		return err
+		return sendErrorResponse(ctx, http.StatusInternalServerError, err)
 	}
 
 	successResp.UserId = user.ID

@@ -11,7 +11,10 @@ build/main: cmd/main.go generated
 run:
 	docker-compose up --build
 
-start: init run
+start: down init run
+
+down:
+	docker-compose down --volumes
 
 clean:
 	rm -rf generated
@@ -21,7 +24,7 @@ init: generate
 	go mod vendor
 
 test:
-	go test -short -coverprofile coverage.out -v ./...
+	go test -short -coverprofile coverage.out -v ./... && go tool cover -html=coverage.out
 
 generate: generated generate_mocks
 

@@ -32,26 +32,24 @@ const (
 // Register handles user registration
 func (s *Server) Register(ctx echo.Context) error {
 	var (
-		errorResp   generated.ErrorResponse
 		successResp generated.RegistrationResponse
 	)
 
 	request := &generated.RegistrationRequest{}
 	err := json.NewDecoder(ctx.Request().Body).Decode(&request)
 	if err != nil {
-		return err
+		return sendErrorResponse(ctx, http.StatusBadRequest, err)
 	}
 
 	err = validate(request)
 	if err != nil {
-		errorResp.Message = err.Error()
-		return ctx.JSON(http.StatusBadRequest, errorResp)
+		return sendErrorResponse(ctx, http.StatusBadRequest, err)
 	}
 
 	// hash password
-	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.MinCost)
+	hashedPwd, err := GenerateFromPassword([]byte(request.Password), bcrypt.MinCost)
 	if err != nil {
-		return err
+		return sendErrorResponse(ctx, http.StatusInternalServerError, err)
 	}
 	request.Password = string(hashedPwd)
 
@@ -68,7 +66,7 @@ func (s *Server) Register(ctx echo.Context) error {
 
 	err = s.Repository.StoreRegistration(ctx.Request().Context(), registrationData)
 	if err != nil {
-		return err
+		return sendErrorResponse(ctx, http.StatusInternalServerError, err)
 	}
 
 	successResp.UserId = userID

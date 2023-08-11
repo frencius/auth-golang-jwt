@@ -5,7 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"fmt"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -18,15 +18,13 @@ import (
 
 func (s *Server) GetProfile(ctx echo.Context, params generated.GetProfileParams) error {
 	var (
-		errorResp   generated.ErrorResponse
 		successResp generated.GetProfileResponse
 	)
 
-	authHeader := ctx.Request().Header.Get("Authorization")
+	authHeader := params.Authorization
 	splittedAuth := strings.Split(authHeader, " ")
 	if len(splittedAuth) < 2 {
-		errorResp.Message = "Auth header is not valid"
-		return ctx.JSON(http.StatusBadRequest, errorResp)
+		return sendErrorResponse(ctx, http.StatusBadRequest, errors.New("Auth header is not valid"))
 	}
 
 	tknStr := splittedAuth[1]
@@ -36,29 +34,24 @@ func (s *Server) GetProfile(ctx echo.Context, params generated.GetProfileParams)
 	parseResult, _ := x509.ParsePKCS8PrivateKey(block.Bytes)
 	key := parseResult.(*rsa.PrivateKey)
 
-	tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (interface{}, error) {
+	tkn, err := ParseWithClaims(tknStr, claims, func(token *jwt.Token) (interface{}, error) {
 		return key.Public(), nil
 	})
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
-			errorResp.Message = "User is not authorized"
-			return ctx.JSON(http.StatusForbidden, errorResp)
+			return sendErrorResponse(ctx, http.StatusForbidden, errors.New("User is not authorized"))
 		}
-
-		errorResp.Message = err.Error()
-		return ctx.JSON(http.StatusForbidden, errorResp)
+		return sendErrorResponse(ctx, http.StatusForbidden, err)
 	}
 
 	if !tkn.Valid {
-		errorResp.Message = "User is not authorized"
-		return ctx.JSON(http.StatusForbidden, errorResp)
+		return sendErrorResponse(ctx, http.StatusForbidden, errors.New("User is not authorized"))
 	}
 
 	// get user data by user id
 	user, err := s.Repository.GetUserByID(ctx.Request().Context(), claims.UserID)
 	if err != nil {
-		errorResp.Message = err.Error()
-		return ctx.JSON(http.StatusBadRequest, errorResp)
+		return sendErrorResponse(ctx, http.StatusInternalServerError, err)
 	}
 
 	successResp.FullName = user.FullName
@@ -69,15 +62,13 @@ func (s *Server) GetProfile(ctx echo.Context, params generated.GetProfileParams)
 
 func (s *Server) UpdateProfile(ctx echo.Context, params generated.UpdateProfileParams) error {
 	var (
-		errorResp   generated.ErrorResponse
 		successResp generated.UpdateProfileResponse
 	)
 
-	authHeader := ctx.Request().Header.Get("Authorization")
+	authHeader := params.Authorization
 	splittedAuth := strings.Split(authHeader, " ")
 	if len(splittedAuth) < 2 {
-		errorResp.Message = "Auth header is not valid"
-		return ctx.JSON(http.StatusBadRequest, errorResp)
+		return sendErrorResponse(ctx, http.StatusBadRequest, errors.New("Auth header is not valid"))
 	}
 
 	tknStr := splittedAuth[1]
@@ -87,34 +78,30 @@ func (s *Server) UpdateProfile(ctx echo.Context, params generated.UpdateProfileP
 	parseResult, _ := x509.ParsePKCS8PrivateKey(block.Bytes)
 	key := parseResult.(*rsa.PrivateKey)
 
-	tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (interface{}, error) {
+	tkn, err := ParseWithClaims(tknStr, claims, func(token *jwt.Token) (interface{}, error) {
 		return key.Public(), nil
 	})
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
-			errorResp.Message = "User is not authorized"
-			return ctx.JSON(http.StatusForbidden, errorResp)
+			return sendErrorResponse(ctx, http.StatusForbidden, errors.New("User is not authorized"))
 		}
 
-		errorResp.Message = err.Error()
-		return ctx.JSON(http.StatusForbidden, errorResp)
+		return sendErrorResponse(ctx, http.StatusForbidden, err)
 	}
 
 	if !tkn.Valid {
-		errorResp.Message = "User is not authorized"
-		return ctx.JSON(http.StatusForbidden, errorResp)
+		return sendErrorResponse(ctx, http.StatusForbidden, errors.New("User is not authorized"))
 	}
 
 	request := &generated.UpdateProfileRequest{}
 	err = json.NewDecoder(ctx.Request().Body).Decode(&request)
 	if err != nil {
-		return err
+		return sendErrorResponse(ctx, http.StatusBadRequest, err)
 	}
 
 	err = validateUpdateProfile(request)
 	if err != nil {
-		errorResp.Message = err.Error()
-		return ctx.JSON(http.StatusBadRequest, errorResp)
+		return sendErrorResponse(ctx, http.StatusBadRequest, err)
 	}
 
 	// update profile
@@ -125,16 +112,12 @@ func (s *Server) UpdateProfile(ctx echo.Context, params generated.UpdateProfileP
 	}
 	err = s.Repository.UpdateProfile(ctx.Request().Context(), registrationData)
 	if err != nil {
-		fmt.Println(err)
 		if err.Error() == "user is not exist" {
-			errorResp.Message = err.Error()
-			return ctx.JSON(http.StatusBadRequest, errorResp)
+			return sendErrorResponse(ctx, http.StatusNotFound, err)
 		} else if strings.Contains(err.Error(), "pq: duplicate key value") {
-			errorResp.Message = "phone number conflict"
-			return ctx.JSON(http.StatusConflict, errorResp)
+			return sendErrorResponse(ctx, http.StatusConflict, errors.New("phone number conflict"))
 		}
-
-		return err
+		return sendErrorResponse(ctx, http.StatusInternalServerError, err)
 	}
 
 	successResp.Result = "update profile success"

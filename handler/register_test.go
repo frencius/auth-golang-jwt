@@ -69,6 +69,29 @@ func TestRegister(t *testing.T) {
 		assert.Nil(t, err, "error should be nil")
 	})
 
+	t.Run("store registration error - phone number conflict", func(t *testing.T) {
+		payload := []byte(
+			`{
+				"full_name":    "sadam 2",
+				"phone_number": "+622342342322",
+				"password":     "AAAAAAAAA1a^1"
+			}`)
+
+		paramBytes := payload
+		_ = json.Unmarshal(paramBytes, &param)
+
+		req := httptest.NewRequest(http.MethodPost, "/register", bytes.NewBuffer(paramBytes))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		e := echo.New()
+		c := e.NewContext(req, rec)
+
+		mockRepository.EXPECT().StoreRegistration(gomock.Any(), gomock.Any()).Return(errors.New("pq: duplicate key value")).Times(1)
+
+		err := srv.Register(c)
+		assert.Nil(t, err, "error should be nil")
+	})
+
 	t.Run("generate password error", func(t *testing.T) {
 		payload := []byte(
 			`{

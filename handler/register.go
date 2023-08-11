@@ -66,6 +66,10 @@ func (s *Server) Register(ctx echo.Context) error {
 
 	err = s.Repository.StoreRegistration(ctx.Request().Context(), registrationData)
 	if err != nil {
+		if strings.Contains(err.Error(), "pq: duplicate key value") {
+			return sendErrorResponse(ctx, http.StatusConflict, errors.New("phone number conflict"))
+		}
+
 		return sendErrorResponse(ctx, http.StatusInternalServerError, err)
 	}
 

@@ -59,7 +59,7 @@ To run test, run the following command:
 make test
 ```
 
-# Create Private Key
+## Create Private Key
 ```
     openssl genrsa 2048 | openssl pkcs8 -topk8 -nocrypt
 ```
